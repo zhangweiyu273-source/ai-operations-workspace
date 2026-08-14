@@ -115,6 +115,9 @@ button, input, textarea, select { font: inherit; }
 .data-filters input[type="date"] { flex: 0 1 148px; }
 .metric-table { min-width: 1420px; }
 .metric-dialog { width: min(820px, 100%); }
+.keyword-dialog { width: min(760px, 100%); }
+.keyword-table { min-width: 1320px; }
+.keyword-filters input { flex: 0 1 120px; }
 .dialog-note { margin: -8px 0 16px; color: var(--muted); font-size: 13px; line-height: 1.6; }
 .import-result { margin-top: 18px; }
 .import-summary { display: flex; flex-wrap: wrap; gap: 8px; }

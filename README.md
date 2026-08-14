@@ -4,6 +4,10 @@
 
 ## 技术栈
 
+## 关键词库
+
+关键词库位于 <http://localhost:3000/keywords>，支持单条录入、组合筛选、组织内去重、CSV/XLSX 预览导入和筛选结果导出。导入必填列为“关键词”。
+
 - Frontend: Next.js 16、React 19、TypeScript
 - Backend: Python 3.12、FastAPI、SQLAlchemy 2、Alembic
 - Database: PostgreSQL 17
@@ -91,6 +95,8 @@ PostgreSQL 集成测试必须使用独立的 `ai_ops_test` 数据库，禁止指
 ```powershell
 scripts\test-backend.cmd
 ```
+
+该入口会先构建 test profile 的 Migration 镜像，确保新增 Migration 不会因复用旧镜像而被遗漏。
 
 该命令启动 Compose `test` profile 中的独立 PostgreSQL（默认端口5433）、执行 Migration，再把 `.env` 的 `TEST_DATABASE_URL` 注入 pytest。测试代码会拒绝数据库名不以 `_test` 结尾的地址。
 

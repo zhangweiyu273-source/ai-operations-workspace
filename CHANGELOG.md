@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+### Phase E - Keyword Library
+
+- Added keyword CRUD, normalized organization-scoped deduplication, soft deletion, filtering, statistics, CSV/XLSX preview import and UTF-8 BOM CSV export.
+- Added the `/keywords` production workbench page and API/frontend regression tests.
+
 ### Added
 
 - 初始化 Next.js + TypeScript 前端骨架与基础页面测试。

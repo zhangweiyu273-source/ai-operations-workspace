@@ -73,3 +73,8 @@
 - [x] 数据库异常rollback并记录安全上下文日志
 - [x] 数据中心筛选Query Schema回归正常
 - [ ] 创建initial stable commit（等待配置Git作者身份）
+## Phase E verification (2026-08-14)
+
+- [x] `20260814_0004` creates the `keywords` table and active-record normalized-key uniqueness index.
+- [x] CRUD, soft deletion, pagination, sorting, search, combined filters, CSV/XLSX preview import, duplicate skip, atomic validation and CSV export are covered by tests.
+- [x] `/keywords` is a production data page rather than a ModulePlaceholder.

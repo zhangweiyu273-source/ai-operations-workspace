@@ -159,3 +159,13 @@
 - 防止再次发生规则：Router只负责HTTP编排；输入规范化和类型约束由Schema承担。
 - 对应测试：既有搜索、平台、账号、日期、分页、统计和导出回归测试。
 - 修复日期：2026-08-14
+### BUG-2026-013：测试 Profile 的 Migration 容器可能使用旧镜像
+
+- 问题表现：主服务已执行新 Migration，但 `test-migrate` 仍显示旧 revision，导致独立测试库未验证最新表结构。
+- 复现方式：仅执行默认 `docker compose up -d --build` 后，再运行 test profile 的 `test-migrate`。
+- 根本原因：`test-migrate` 属于 Compose profile，默认构建不包含该服务，随后 `docker compose run` 会复用旧镜像。
+- 修复方式：标准 `scripts/test-backend.ps1` 在启动测试数据库后显式执行 `docker compose --profile test build test-migrate`。
+- 影响范围：独立数据库 Migration 验证与 CI/本地测试可信度；不影响已运行的开发容器。
+- 防止再次发生规则：包含 profile 专属镜像的验证入口必须显式构建对应服务，不能假设默认 Compose build 会覆盖它。
+- 对应测试：`scripts\test-backend.cmd` 后校验 `alembic current` 为 `20260814_0004`；测试数据库 upgrade/downgrade/re-upgrade 往返。
+- 修复日期：2026-08-14

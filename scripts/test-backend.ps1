@@ -7,6 +7,8 @@ Push-Location $projectRoot
 try {
     & $docker compose --profile test up -d test-db
     if ($LASTEXITCODE -ne 0) { throw "test-db failed to start" }
+    & $docker compose --profile test build test-migrate
+    if ($LASTEXITCODE -ne 0) { throw "test migration image build failed" }
     & $docker compose --profile test run --rm test-migrate
     if ($LASTEXITCODE -ne 0) { throw "test migration failed" }
 

@@ -131,3 +131,9 @@ Compose 中 `migrate` 是一次性服务：等待 PostgreSQL healthy 后执行 `
 - 数据中心查询参数由 Pydantic Query Schema 负责规范化，Router 只做HTTP协议编排。
 - readiness 必须真实执行 PostgreSQL `SELECT 1`；实测数据库停止时返回503，恢复后返回200。
 - 前端构建不依赖 `NODE_OPTIONS`；`.next/lock` 表示并发进程，禁止通过盲删锁文件掩盖正在运行的进程。
+## Phase E: Keyword Library
+
+- `keywords` is organization-scoped. `keyword` preserves the entered text; `normalized_keyword` is used only for deduplication.
+- Normalization applies Unicode NFKC, trims outer whitespace, collapses repeated whitespace, and case-folds. It does not apply semantic/NLP merging.
+- Active records are unique on `(organization_id, normalized_keyword)`; soft-deleted records may be re-entered.
+- Future Topic-to-Keyword relationships must use a many-to-many association table, not a copied text field.
