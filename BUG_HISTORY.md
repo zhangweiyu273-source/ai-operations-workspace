@@ -169,3 +169,14 @@
 - 防止再次发生规则：包含 profile 专属镜像的验证入口必须显式构建对应服务，不能假设默认 Compose build 会覆盖它。
 - 对应测试：`scripts\test-backend.cmd` 后校验 `alembic current` 为 `20260814_0004`；测试数据库 upgrade/downgrade/re-upgrade 往返。
 - 修复日期：2026-08-14
+
+### BUG-2026-014：TopicKeyword Migration 与公共时间戳模型不一致
+
+- 问题表现：PostgreSQL 创建带关键词关联的选题时返回 500，日志显示 `topic_keywords.updated_at does not exist`。
+- 复现方式：执行 `20260814_0005` 后，通过 Topic API 创建包含 `keyword_ids` 的选题。
+- 根本原因：`TopicKeyword` 继承 `TimestampMixin`，ORM 写入会返回 `updated_at`，但初始关联表 Migration 漏建该字段；SQLite 单元测试未覆盖真实 PostgreSQL DDL。
+- 修复方式：新增 `20260814_0006`，为 `topic_keywords` 补充非空、默认当前时间的 `updated_at` 字段。
+- 影响范围：阶段 F 的 Topic-Keyword 创建、更新和关联 API；既有阶段 A-E 数据不受影响。
+- 防止再次发生规则：新增模型必须在 PostgreSQL 迁移后执行真实写入验收，特别校验 Mixins 带来的全部列。
+- 对应测试：`scripts\test-backend.cmd` 的独立 PostgreSQL Migration；Docker 端到端 Topic-Keyword CRUD 联调。
+- 修复日期：2026-08-14

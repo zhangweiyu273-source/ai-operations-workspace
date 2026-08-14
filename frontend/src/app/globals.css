@@ -153,3 +153,6 @@ button, input, textarea, select { font: inherit; }
   .form-grid .full-field { grid-column: auto; }
   .dialog-backdrop { padding: 12px; }
 }
+
+.topic-table { min-width: 1080px; }
+.topic-dialog { width: min(760px, 100%); }

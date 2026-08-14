@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-14 - Stage F 选题库验收完成
+
+- 新增 Topic 与 TopicKeyword 多对多数据模型、版本化 CRUD、筛选、分页、统计及软删除。
+- 选题页面接入真实账号与关键词 API，支持新增、编辑、删除、关键词多选和基础筛选。
+- 增加 Topic 后端专项测试、前端交互测试及 PostgreSQL 联调回归。
+- 修复 TopicKeyword Migration 缺失 `updated_at` 字段的问题，新增 `20260814_0006`。
+
 本项目遵循 Keep a Changelog 的结构，并使用语义化版本。
 
 ## [Unreleased]
