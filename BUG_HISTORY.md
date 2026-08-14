@@ -202,3 +202,15 @@
 - 防止再次发生规则：每增加一个 Migration，必须在同一提交中同步更新 Migration head 断言、结构断言，并执行独立 PostgreSQL upgrade 验证。
 - 对应测试：`backend/tests/test_database.py`、`backend/tests/test_migrations.py` 与 `scripts/test-backend.cmd`。
 - 修复日期：2026-08-14
+
+### BUG-2026-017：任务与复盘列表固定读取前 50 条数据
+
+- BUG编号：BUG-2026-017
+- 问题表现：`/tasks` 与 `/reviews` 页面固定请求第 1 页、每页 50 条；记录超过 50 条后无法继续浏览。任务页还缺少负责人和截止日期筛选，导致阶段 H 的列表验收不完整。
+- 复现方式：创建超过 50 条任务或复盘后访问对应页面；尝试按负责人或截止日期定位任务。
+- 根本原因：后端列表响应未提供总页数，前端也没有页码状态和分页控件；初版接口仅实现负责人参数，未实现时间范围参数。
+- 修复方式：列表响应补充 `total_pages`；Task 和 Review 页面以每页 20 条请求并支持翻页；Task API 新增 `deadline_from` / `deadline_to`，Repository 在数据库中执行截止时间范围筛选，前端补齐负责人、日期范围控件。
+- 影响范围：阶段 H 任务与复盘中心的可浏览性与筛选完整性；数据库结构和既有 API 路径不受影响。
+- 防止再次发生规则：所有分页列表在同一任务中必须验证超过单页上限时的翻页、总数和筛选；筛选要求必须同时在 API、数据库查询和页面交互三层验收。
+- 对应测试：`backend/tests/test_operations.py`、`frontend/src/app/tasks/page.test.tsx`、`frontend/src/app/reviews/page.test.tsx`。
+- 修复日期：2026-08-14

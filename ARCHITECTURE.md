@@ -21,6 +21,7 @@
 - API 层仅承担 HTTP 编排；`OperationTaskService` 与 `OperationReviewService` 负责关联校验、状态转换、完成时间、逾期判断和事务错误处理；Repository 负责 CRUD、分页、筛选和统计查询。
 - 任务被改为“已完成”时写入 `completed_at`；改为其他状态时清空该字段。截止时间早于当前 UTC 时间且状态不为“已完成/已取消”时，响应中的 `is_overdue` 为真。
 - `/api/v1/tasks` 和 `/api/v1/reviews` 提供 CRUD、分页、搜索、筛选和统计；前端 `/tasks` 与 `/reviews` 使用统一 API Client。该阶段不包含 AI、自动化工作流或首页改造。
+- Task 与 Review 列表响应统一包含 `items`、`total`、`page`、`page_size`、`total_pages`，前端每页读取 20 条并提供上一页/下一页导航，避免把固定 50 条误当作全量数据。Task 列表支持 `assignee` 精确筛选，以及 `deadline_from` / `deadline_to` 的截止时间范围筛选；日期范围由前端按本地日期边界转换为 UTC ISO 时间后传入 API。
 
 ## 1. 架构目标
 

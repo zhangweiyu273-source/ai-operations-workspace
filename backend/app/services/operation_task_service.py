@@ -1,4 +1,5 @@
 import logging
+from math import ceil
 from datetime import datetime, timezone
 from uuid import UUID
 
@@ -88,7 +89,14 @@ class OperationTaskService:
 
     def list(self, organization_id: UUID, **params: object) -> dict[str, object]:
         items, total = self.repository.list(organization_id, **params)
-        return {"items": [self.response(item) for item in items], "total": total, "page": params["page"], "page_size": params["page_size"]}
+        page_size = int(params["page_size"])
+        return {
+            "items": [self.response(item) for item in items],
+            "total": total,
+            "page": params["page"],
+            "page_size": page_size,
+            "total_pages": ceil(total / page_size) if total else 0,
+        }
 
     def stats(self, organization_id: UUID) -> dict[str, int]:
         total, completed, in_progress, overdue = self.repository.stats(organization_id, datetime.now(timezone.utc))

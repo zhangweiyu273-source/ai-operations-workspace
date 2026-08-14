@@ -1,4 +1,5 @@
 import logging
+from math import ceil
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -65,7 +66,14 @@ class OperationReviewService:
 
     def list(self, organization_id: UUID, **params: object) -> dict[str, object]:
         items, total = self.repository.list(organization_id, **params)
-        return {"items": [ReviewResponse.model_validate(item) for item in items], "total": total, "page": params["page"], "page_size": params["page_size"]}
+        page_size = int(params["page_size"])
+        return {
+            "items": [ReviewResponse.model_validate(item) for item in items],
+            "total": total,
+            "page": params["page"],
+            "page_size": page_size,
+            "total_pages": ceil(total / page_size) if total else 0,
+        }
 
     def stats(self, organization_id: UUID) -> dict[str, object]:
         total, latest_review_date = self.repository.stats(organization_id)

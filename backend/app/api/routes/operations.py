@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 from fastapi import APIRouter,Depends,Query,Response,status
@@ -9,7 +10,35 @@ from app.services.operation_task_service import OperationTaskService
 from app.services.operation_review_service import OperationReviewService
 Db=Annotated[Session,Depends(get_db)];Org=Annotated[UUID,Depends(get_current_organization_id)];tasks=APIRouter();reviews=APIRouter()
 @tasks.get('')
-def list_tasks(s:Db,org:Org,page:int=1,page_size:int=20,search:str|None=None,status_:str|None=Query(None,alias='status'),task_type:str|None=None,priority:str|None=None,assignee:str|None=None,related_account_id:UUID|None=None,related_topic_id:UUID|None=None):return OperationTaskService(s).list(org,page=page,page_size=page_size,search=search,status=status_,task_type=task_type,priority=priority,assignee=assignee,related_account_id=related_account_id,related_topic_id=related_topic_id)
+def list_tasks(
+    s: Db,
+    org: Org,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    search: str | None = None,
+    status_: str | None = Query(None, alias='status'),
+    task_type: str | None = None,
+    priority: str | None = None,
+    assignee: str | None = None,
+    deadline_from: datetime | None = None,
+    deadline_to: datetime | None = None,
+    related_account_id: UUID | None = None,
+    related_topic_id: UUID | None = None,
+):
+    return OperationTaskService(s).list(
+        org,
+        page=page,
+        page_size=page_size,
+        search=search,
+        status=status_,
+        task_type=task_type,
+        priority=priority,
+        assignee=assignee,
+        deadline_from=deadline_from,
+        deadline_to=deadline_to,
+        related_account_id=related_account_id,
+        related_topic_id=related_topic_id,
+    )
 @tasks.get('/stats')
 def stats(s:Db,org:Org):return OperationTaskService(s).stats(org)
 @tasks.post('',status_code=201)
@@ -21,7 +50,17 @@ def update(id:UUID,d:TaskWrite,s:Db,org:Org):return OperationTaskService(s).upda
 @tasks.delete('/{id}',status_code=204)
 def delete(id:UUID,s:Db,org:Org):OperationTaskService(s).delete(org,id);return Response(status_code=204)
 @reviews.get('')
-def list_reviews(s:Db,org:Org,page:int=1,page_size:int=20,task_id:UUID|None=None,search:str|None=None):return OperationReviewService(s).list(org,page=page,page_size=page_size,task_id=task_id,search=search)
+def list_reviews(
+    s: Db,
+    org: Org,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    task_id: UUID | None = None,
+    search: str | None = None,
+):
+    return OperationReviewService(s).list(
+        org, page=page, page_size=page_size, task_id=task_id, search=search
+    )
 @reviews.get('/stats')
 def review_stats(s:Db,org:Org):return OperationReviewService(s).stats(org)
 @reviews.post('',status_code=201)

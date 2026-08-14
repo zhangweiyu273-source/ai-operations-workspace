@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-14 - Stage H 任务与复盘验收缺口修复
+
+- Task 与 Review 列表新增完整分页元数据和前端分页交互，不再固定只显示前 50 条记录。
+- Task 新增负责人和截止日期范围筛选；后端在数据库查询层执行筛选，前端不会只筛当前页。
+- 补充任务、复盘分页和任务筛选的后端与 Vitest 回归测试。
+
 ## 2026-08-14 - Stage H 运营任务与复盘中心
 
 - 新增 `operation_tasks`、`operation_reviews` 及 Alembic revision `20260814_0008`，任务可真实关联 Account 与 Topic，复盘可真实关联 Task。

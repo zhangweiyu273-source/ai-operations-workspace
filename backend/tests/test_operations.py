@@ -44,17 +44,21 @@ def test_task_service_crud_filters_stats_soft_delete_and_completion(session: Ses
     overdue = service.create(ORG_ID, task_data(session, title="逾期任务", deadline=datetime.now(timezone.utc) - timedelta(days=1)))
     created = service.create(ORG_ID, task_data(session, title="发布任务", task_type="内容发布", status="进行中", priority="中"))
     assert created.related_topic_id and created.related_account_id
-    assert service.list(ORG_ID, page=1, page_size=1, search="发布", status=None, task_type=None, priority=None, assignee=None, related_account_id=None, related_topic_id=None)["total"] == 1
-    assert service.list(ORG_ID, page=1, page_size=20, search=None, status="进行中", task_type="内容发布", priority="中", assignee=None, related_account_id=created.related_account_id, related_topic_id=created.related_topic_id)["total"] == 1
+    filtered = service.list(ORG_ID, page=1, page_size=1, search="发布", status=None, task_type=None, priority=None, assignee=None, deadline_from=None, deadline_to=None, related_account_id=None, related_topic_id=None)
+    assert filtered["total"] == 1 and filtered["total_pages"] == 1
+    assert service.list(ORG_ID, page=1, page_size=20, search=None, status="进行中", task_type="内容发布", priority="中", assignee=None, deadline_from=None, deadline_to=None, related_account_id=created.related_account_id, related_topic_id=created.related_topic_id)["total"] == 1
+    assignee_task = service.create(ORG_ID, task_data(session, title="负责人任务", assignee="张老师", deadline=datetime.now(timezone.utc) + timedelta(days=2)))
+    assert service.list(ORG_ID, page=1, page_size=20, search=None, status=None, task_type=None, priority=None, assignee="张老师", deadline_from=None, deadline_to=None, related_account_id=None, related_topic_id=None)["items"][0].id == assignee_task.id
+    assert service.list(ORG_ID, page=1, page_size=20, search=None, status=None, task_type=None, priority=None, assignee=None, deadline_from=datetime.now(timezone.utc) + timedelta(days=1), deadline_to=datetime.now(timezone.utc) + timedelta(days=3), related_account_id=None, related_topic_id=None)["total"] == 1
     assert service.response(service.get(ORG_ID, overdue.id)).is_overdue is True
     completed = service.update(ORG_ID, created.id, task_data(session, title="发布任务", status="已完成"))
     assert completed.completed_at is not None and completed.is_overdue is False
     reopened = service.update(ORG_ID, created.id, task_data(session, title="发布任务", status="进行中"))
     assert reopened.completed_at is None
-    assert service.stats(ORG_ID) == {"total": 2, "completed": 0, "in_progress": 1, "overdue": 1}
+    assert service.stats(ORG_ID) == {"total": 3, "completed": 0, "in_progress": 1, "overdue": 1}
     service.delete(ORG_ID, created.id)
     assert session.get(OperationTask, created.id).is_deleted is True
-    assert service.list(ORG_ID, page=1, page_size=20, search=None, status=None, task_type=None, priority=None, assignee=None, related_account_id=None, related_topic_id=None)["total"] == 1
+    assert service.list(ORG_ID, page=1, page_size=20, search=None, status=None, task_type=None, priority=None, assignee=None, deadline_from=None, deadline_to=None, related_account_id=None, related_topic_id=None)["total"] == 2
 
 
 def test_task_service_rejects_invalid_relations_and_rolls_back(session: Session) -> None:
@@ -76,7 +80,7 @@ def test_review_service_crud_pagination_stats_task_validation_and_soft_delete(se
     first = reviews.create(ORG_ID, ReviewWrite(task_id=task.id, title="首日复盘", review_date=date.today(), result="完成"))
     second = reviews.create(ORG_ID, ReviewWrite(task_id=task.id, title="第二次复盘", review_date=date.today(), problem="节奏慢"))
     page = reviews.list(ORG_ID, page=1, page_size=1, task_id=task.id, search="复盘")
-    assert page["total"] == 2 and len(page["items"]) == 1
+    assert page["total"] == 2 and page["total_pages"] == 2 and len(page["items"]) == 1
     updated = reviews.update(ORG_ID, first.id, ReviewWrite(task_id=task.id, title="首日复盘更新", review_date=date.today(), result="达成"))
     assert updated.result == "达成"
     assert reviews.stats(ORG_ID)["total"] == 2

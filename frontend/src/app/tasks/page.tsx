@@ -7,22 +7,106 @@ import { apiClient } from "@/lib/api/client";
 
 type Account = { id: string; account_name: string };
 type Topic = { id: string; title: string };
-type Task = { id: string; title: string; description?: string; task_type: string; related_topic_id?: string; related_account_id?: string; status: string; priority: string; assignee?: string; start_date?: string; deadline?: string; completed_at?: string; is_overdue: boolean; updated_at: string };
+type Task = {
+  id: string; title: string; description?: string; task_type: string;
+  related_topic_id?: string; related_account_id?: string; status: string;
+  priority: string; assignee?: string; start_date?: string; deadline?: string;
+  completed_at?: string; is_overdue: boolean; updated_at: string;
+};
 type TaskInput = Omit<Task, "id" | "completed_at" | "is_overdue" | "updated_at"> & { id?: string };
+type TaskList = { items: Task[]; total: number; page: number; page_size: number; total_pages: number };
 
 const statuses = ["待开始", "进行中", "待审核", "已完成", "已取消"];
 const types = ["内容策划", "内容创作", "内容发布", "数据分析", "运营复盘", "活动运营", "其他"];
 const priorities = ["高", "中", "低"];
 const blank = (): TaskInput => ({ title: "", task_type: "内容创作", status: "待开始", priority: "中", description: "", related_topic_id: "", related_account_id: "", assignee: "", start_date: "", deadline: "" });
 
-export default function TasksPage() {
-  const [items, setItems] = useState<Task[]>([]); const [topics, setTopics] = useState<Topic[]>([]); const [accounts, setAccounts] = useState<Account[]>([]);
-  const [form, setForm] = useState<TaskInput | null>(null); const [error, setError] = useState("");
-  const [filters, setFilters] = useState({ search: "", status: "", task_type: "", priority: "", assignee: "" });
-  const load = useCallback(async () => { const query = new URLSearchParams({ page: "1", page_size: "50" }); Object.entries(filters).forEach(([key, value]) => value && query.set(key, value)); const [taskData, topicData, accountData] = await Promise.all([apiClient.get<{ items: Task[] }>(`/tasks?${query}`), apiClient.get<{ items: Topic[] }>("/topics?page_size=100"), apiClient.get<{ items: Account[] }>("/accounts?page_size=100")]); setItems(taskData.items); setTopics(topicData.items); setAccounts(accountData.items); }, [filters]);
-  useEffect(() => { const timer = window.setTimeout(() => { void load().catch(() => setError("任务数据加载失败")); }, 0); return () => window.clearTimeout(timer); }, [load]);
-  async function save(value: TaskInput) { if (!value.title.trim()) { setError("请填写任务名称"); return; } const payload = { ...value, related_topic_id: value.related_topic_id || null, related_account_id: value.related_account_id || null, start_date: value.start_date || null, deadline: value.deadline || null }; if (value.id) await apiClient.put(`/tasks/${value.id}`, payload); else await apiClient.post("/tasks", payload); setForm(null); setError(""); await load(); }
-  return <><PageHeader title="运营任务" description="管理运营执行、发布与复盘任务。" actions={<button className="button primary" onClick={() => setForm(blank())}>新增任务</button>} />{error && <p role="alert" className="error-message">{error}</p>}<section className="account-list-card"><div className="filter-bar"><input aria-label="搜索任务" placeholder="搜索任务名称或描述" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })}/><select aria-label="任务状态筛选" value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">全部状态</option>{statuses.map((v) => <option key={v}>{v}</option>)}</select><select aria-label="任务类型筛选" value={filters.task_type} onChange={(e) => setFilters({ ...filters, task_type: e.target.value })}><option value="">全部类型</option>{types.map((v) => <option key={v}>{v}</option>)}</select><select aria-label="优先级筛选" value={filters.priority} onChange={(e) => setFilters({ ...filters, priority: e.target.value })}><option value="">全部优先级</option>{priorities.map((v) => <option key={v}>{v}</option>)}</select></div><TableContainer><table className="data-table"><thead><tr><th>任务</th><th>类型</th><th>状态</th><th>优先级</th><th>截止时间</th><th>完成时间</th><th>操作</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}><td>{item.title}{item.is_overdue && <span className="error-message">（已逾期）</span>}</td><td>{item.task_type}</td><td><select aria-label={`修改 ${item.title} 状态`} value={item.status} onChange={async (e) => { await save({ ...item, status: e.target.value }); }}>{statuses.map((v) => <option key={v}>{v}</option>)}</select></td><td>{item.priority}</td><td>{item.deadline ? new Date(item.deadline).toLocaleDateString("zh-CN") : "-"}</td><td>{item.completed_at ? new Date(item.completed_at).toLocaleString("zh-CN") : "-"}</td><td className="row-actions"><button onClick={() => setForm(item)}>编辑</button><button className="danger-link" onClick={async () => { if (window.confirm("确认删除该任务？")) { await apiClient.delete(`/tasks/${item.id}`); await load(); }}}>删除</button></td></tr>)}</tbody></table></TableContainer></section>{form && <TaskForm value={form} topics={topics} accounts={accounts} onClose={() => setForm(null)} onSave={save}/>}</>;
+function deadlineBoundary(value: string, end = false) {
+  return value ? new Date(`${value}T${end ? "23:59:59.999" : "00:00:00"}`).toISOString() : "";
 }
 
-function TaskForm({ value, topics, accounts, onClose, onSave }: { value: TaskInput; topics: Topic[]; accounts: Account[]; onClose: () => void; onSave: (value: TaskInput) => Promise<void> }) { const [current, setCurrent] = useState(value); const submit = (event: FormEvent) => { event.preventDefault(); void onSave(current); }; return <div className="dialog-backdrop"><section className="dialog"><div className="dialog-header"><h2>{current.id ? "编辑任务" : "新增任务"}</h2><button aria-label="关闭" onClick={onClose}>×</button></div><form className="form-grid" onSubmit={submit}><label className="full-field">任务名称 *<input required value={current.title} onChange={(e) => setCurrent({...current, title:e.target.value})}/></label><label>任务类型<select value={current.task_type} onChange={(e) => setCurrent({...current, task_type:e.target.value})}>{types.map((v) => <option key={v}>{v}</option>)}</select></label><label>状态<select value={current.status} onChange={(e) => setCurrent({...current, status:e.target.value})}>{statuses.map((v) => <option key={v}>{v}</option>)}</select></label><label>优先级<select value={current.priority} onChange={(e) => setCurrent({...current, priority:e.target.value})}>{priorities.map((v) => <option key={v}>{v}</option>)}</select></label><label>关联选题<select aria-label="关联选题" value={current.related_topic_id || ""} onChange={(e) => setCurrent({...current, related_topic_id:e.target.value})}><option value="">不关联</option>{topics.map((v) => <option value={v.id} key={v.id}>{v.title}</option>)}</select></label><label>关联账号<select aria-label="关联账号" value={current.related_account_id || ""} onChange={(e) => setCurrent({...current, related_account_id:e.target.value})}><option value="">不关联</option>{accounts.map((v) => <option value={v.id} key={v.id}>{v.account_name}</option>)}</select></label><label>负责人<input value={current.assignee || ""} onChange={(e) => setCurrent({...current, assignee:e.target.value})}/></label><label>截止时间<input type="datetime-local" value={current.deadline || ""} onChange={(e) => setCurrent({...current, deadline:e.target.value})}/></label><label className="full-field">描述<textarea value={current.description || ""} onChange={(e) => setCurrent({...current, description:e.target.value})}/></label><div className="dialog-actions full-field"><button type="button" className="button secondary" onClick={onClose}>取消</button><button className="button primary">保存</button></div></form></section></div>; }
+export default function TasksPage() {
+  const [data, setData] = useState<TaskList | null>(null);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [form, setForm] = useState<TaskInput | null>(null);
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({ search: "", status: "", task_type: "", priority: "", assignee: "", deadline_from: "", deadline_to: "" });
+
+  const load = useCallback(async () => {
+    const query = new URLSearchParams({ page: String(page), page_size: "20" });
+    Object.entries(filters).forEach(([key, value]) => {
+      if (!value) return;
+      query.set(key, key === "deadline_from" ? deadlineBoundary(value) : key === "deadline_to" ? deadlineBoundary(value, true) : value);
+    });
+    const [taskData, topicData, accountData] = await Promise.all([
+      apiClient.get<TaskList>(`/tasks?${query}`),
+      apiClient.get<{ items: Topic[] }>("/topics?page_size=100"),
+      apiClient.get<{ items: Account[] }>("/accounts?page_size=100"),
+    ]);
+    setData(taskData); setTopics(topicData.items); setAccounts(accountData.items);
+  }, [filters, page]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load().catch(() => setError("任务数据加载失败")); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+  function updateFilter(name: keyof typeof filters, value: string) {
+    setPage(1); setFilters((current) => ({ ...current, [name]: value }));
+  }
+
+  async function save(value: TaskInput) {
+    if (!value.title.trim()) { setError("请填写任务名称"); return; }
+    const payload = { ...value, related_topic_id: value.related_topic_id || null, related_account_id: value.related_account_id || null, start_date: value.start_date || null, deadline: value.deadline || null };
+    try {
+      if (value.id) await apiClient.put(`/tasks/${value.id}`, payload); else await apiClient.post("/tasks", payload);
+      setForm(null); setError(""); await load();
+    } catch { setError("任务保存失败，请检查关联选题和账号是否有效"); }
+  }
+
+  async function remove(task: Task) {
+    if (!window.confirm(`确认删除任务“${task.title}”吗？`)) return;
+    try { await apiClient.delete(`/tasks/${task.id}`); await load(); } catch { setError("任务删除失败"); }
+  }
+
+  const totalPages = Math.max(data?.total_pages ?? 0, 1);
+  return <>
+    <PageHeader title="运营任务" description="管理运营执行、发布与复盘任务。" actions={<button className="button primary" onClick={() => setForm(blank())}>新增任务</button>} />
+    {error && <p role="alert" className="error-message">{error}</p>}
+    <section className="account-list-card">
+      <div className="filter-bar">
+        <input aria-label="搜索任务" placeholder="搜索任务名称或描述" value={filters.search} onChange={(e) => updateFilter("search", e.target.value)} />
+        <input aria-label="负责人筛选" placeholder="负责人" value={filters.assignee} onChange={(e) => updateFilter("assignee", e.target.value)} />
+        <select aria-label="任务状态筛选" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)}><option value="">全部状态</option>{statuses.map((v) => <option key={v}>{v}</option>)}</select>
+        <select aria-label="任务类型筛选" value={filters.task_type} onChange={(e) => updateFilter("task_type", e.target.value)}><option value="">全部类型</option>{types.map((v) => <option key={v}>{v}</option>)}</select>
+        <select aria-label="优先级筛选" value={filters.priority} onChange={(e) => updateFilter("priority", e.target.value)}><option value="">全部优先级</option>{priorities.map((v) => <option key={v}>{v}</option>)}</select>
+        <label>截止日期从<input aria-label="截止日期从" type="date" value={filters.deadline_from} onChange={(e) => updateFilter("deadline_from", e.target.value)} /></label>
+        <label>截止日期至<input aria-label="截止日期至" type="date" value={filters.deadline_to} onChange={(e) => updateFilter("deadline_to", e.target.value)} /></label>
+      </div>
+      <TableContainer><table className="data-table"><thead><tr><th>任务</th><th>负责人</th><th>类型</th><th>状态</th><th>优先级</th><th>截止时间</th><th>完成时间</th><th>操作</th></tr></thead><tbody>
+        {data?.items.map((item) => <tr key={item.id}><td>{item.title}{item.is_overdue && <span className="error-message">（已逾期）</span>}</td><td>{item.assignee || "-"}</td><td>{item.task_type}</td><td><select aria-label={`修改 ${item.title} 状态`} value={item.status} onChange={(e) => void save({ ...item, status: e.target.value })}>{statuses.map((v) => <option key={v}>{v}</option>)}</select></td><td>{item.priority}</td><td>{item.deadline ? new Date(item.deadline).toLocaleDateString("zh-CN") : "-"}</td><td>{item.completed_at ? new Date(item.completed_at).toLocaleString("zh-CN") : "-"}</td><td className="row-actions"><button onClick={() => setForm(item)}>编辑</button><button className="danger-link" onClick={() => void remove(item)}>删除</button></td></tr>)}
+      </tbody></table></TableContainer>
+      <div className="pagination" aria-label="任务分页"><span>共 {data?.total ?? 0} 条</span><button className="button secondary" disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>上一页</button><span>{page} / {totalPages}</span><button className="button secondary" disabled={page >= totalPages} onClick={() => setPage((current) => current + 1)}>下一页</button></div>
+    </section>
+    {form && <TaskForm value={form} topics={topics} accounts={accounts} onClose={() => setForm(null)} onSave={save} />}
+  </>;
+}
+
+function TaskForm({ value, topics, accounts, onClose, onSave }: { value: TaskInput; topics: Topic[]; accounts: Account[]; onClose: () => void; onSave: (value: TaskInput) => Promise<void> }) {
+  const [current, setCurrent] = useState(value);
+  const submit = (event: FormEvent) => { event.preventDefault(); void onSave(current); };
+  return <div className="dialog-backdrop"><section className="dialog"><div className="dialog-header"><h2>{current.id ? "编辑任务" : "新增任务"}</h2><button aria-label="关闭" onClick={onClose}>×</button></div><form className="form-grid" onSubmit={submit}>
+    <label className="full-field">任务名称 *<input required value={current.title} onChange={(e) => setCurrent({ ...current, title: e.target.value })} /></label>
+    <label>任务类型<select value={current.task_type} onChange={(e) => setCurrent({ ...current, task_type: e.target.value })}>{types.map((v) => <option key={v}>{v}</option>)}</select></label>
+    <label>状态<select value={current.status} onChange={(e) => setCurrent({ ...current, status: e.target.value })}>{statuses.map((v) => <option key={v}>{v}</option>)}</select></label>
+    <label>优先级<select value={current.priority} onChange={(e) => setCurrent({ ...current, priority: e.target.value })}>{priorities.map((v) => <option key={v}>{v}</option>)}</select></label>
+    <label>关联选题<select aria-label="关联选题" value={current.related_topic_id || ""} onChange={(e) => setCurrent({ ...current, related_topic_id: e.target.value })}><option value="">不关联</option>{topics.map((v) => <option value={v.id} key={v.id}>{v.title}</option>)}</select></label>
+    <label>关联账号<select aria-label="关联账号" value={current.related_account_id || ""} onChange={(e) => setCurrent({ ...current, related_account_id: e.target.value })}><option value="">不关联</option>{accounts.map((v) => <option value={v.id} key={v.id}>{v.account_name}</option>)}</select></label>
+    <label>负责人<input value={current.assignee || ""} onChange={(e) => setCurrent({ ...current, assignee: e.target.value })} /></label>
+    <label>截止时间<input type="datetime-local" value={current.deadline || ""} onChange={(e) => setCurrent({ ...current, deadline: e.target.value })} /></label>
+    <label className="full-field">描述<textarea value={current.description || ""} onChange={(e) => setCurrent({ ...current, description: e.target.value })} /></label>
+    <div className="dialog-actions full-field"><button type="button" className="button secondary" onClick={onClose}>取消</button><button className="button primary">保存</button></div>
+  </form></section></div>;
+}
