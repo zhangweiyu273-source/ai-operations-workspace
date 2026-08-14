@@ -1,0 +1,7 @@
+Database schema changes are managed exclusively by Alembic.
+
+Create a revision only after importing all models into app.models:
+    alembic revision --autogenerate -m "describe change"
+
+Review generated SQL before applying:
+    alembic upgrade head
