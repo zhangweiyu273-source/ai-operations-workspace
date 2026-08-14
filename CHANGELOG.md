@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-14 - Stage K AI运营分析中心 V1
+
+- 新增 `AIAnalysis` 持久化模型与 `20260814_0010` Alembic migration。
+- 新增受限的 `AnalysisContextBuilder`、Prompt v1、结构化 AI 分析服务和历史查询/软删除 API。
+- 新增 `/ai-analysis` 正式页面，支持分析类型、日期、平台、账号筛选、结构化结果和历史记录。
+- 完成一次不含敏感个人资料的真实 DeepSeek 聚合分析联调；结果、Token 和耗时均已记录。
+
 ## 2026-08-14 - Stage J AI Provider Foundation
 
 - 新增统一 `AIService`、`BaseAIProvider`、DeepSeek Provider、统一响应 Schema、超时与有限重试策略。

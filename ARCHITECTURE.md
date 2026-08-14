@@ -116,6 +116,13 @@ PostgreSQL 是事实来源。核心实体采用 UUID 主键、时区感知时间
 
 后续在 `backend/app/ai/` 建立 provider 接口、厂商实现、schemas 和 prompts。业务服务只调用 `AIService.generate/analyze/extract`。密钥由环境变量注入；未配置或厂商故障时只影响 AI 请求，分析结果持久化后可审计。
 
+### 阶段 K：AI 运营分析中心
+
+- `AIAnalysis`（revision `20260814_0010`）保存只读分析的类型、时间范围、结构化结果、Provider、模型、Prompt/Context 版本和软删除状态；不保存 API Key 或原始 Prompt。
+- 请求链路为：`/api/v1/ai/analysis` → `AIAnalysisService` → `AnalysisContextBuilder`（数据库聚合与限量）→ versioned Prompt → `AIService` → `DeepSeekProvider` → `AIAnalysis` / `AIRequestLog`。
+- 基础指标由后端 SQL/Python 计算，AI 只能解释事实、提出假设与建议；不得修改业务数据或执行建议。模型输出必须区分事实、分析、假设、建议和数据局限。
+- `/ai-analysis` 使用统一 API Client，可发起分析、查看持久化历史及软删除历史记录；AI 不可用时仅返回安全的 AI 错误，其他模块不受影响。
+
 ## 7. 配置与文件
 
 配置由环境变量统一注入，`.env.example` 仅包含安全占位值。容器内上传路径为 `/app/storage/uploads`，通过 volume 与源码隔离。云端可替换为对象存储而不改变业务 API。

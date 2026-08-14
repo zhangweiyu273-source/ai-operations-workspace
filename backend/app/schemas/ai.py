@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -43,3 +43,46 @@ class AIStatistics(BaseModel):
     failure_count: int
     total_tokens: int
     average_latency_ms: float | None
+
+
+AnalysisType = Literal["operation", "content", "keyword", "topic", "task_review"]
+
+class AIAnalysisCreate(BaseModel):
+    analysis_type: AnalysisType
+    date_start: date | None = None
+    date_end: date | None = None
+    account_ids: list[UUID] = Field(default_factory=list, max_length=20)
+    platform: str | None = Field(default=None, max_length=30)
+
+class AIAnalysisResult(BaseModel):
+    key_findings: list[str] = Field(default_factory=list)
+    positive_signals: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
+    possible_causes: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+    next_actions: list[str] = Field(default_factory=list)
+    data_limitations: list[str] = Field(default_factory=list)
+    confidence: str = "低"
+
+class AIAnalysisResponse(BaseModel):
+    id: UUID
+    analysis_type: AnalysisType
+    title: str
+    date_start: date | None
+    date_end: date | None
+    summary: str
+    result_json: dict
+    provider: str
+    model: str
+    prompt_version: str
+    context_version: str
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class AIAnalysisList(BaseModel):
+    items: list[AIAnalysisResponse]
+    total: int
+    page: int
+    page_size: int

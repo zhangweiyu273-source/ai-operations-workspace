@@ -1,2 +1,3 @@
-import { ModulePlaceholder } from "@/components/modules/module-placeholder";
-export default function AiAnalysisPage() { return <ModulePlaceholder title="AI分析" description="AI能力将在独立 Provider 层完成后启用。" />; }
+import { AiAnalysisPage } from "@/features/ai-analysis/ai-analysis-page";
+
+export default function Page() { return <AiAnalysisPage />; }
