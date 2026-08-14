@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-14 - Stage J AI Provider Foundation
+
+- 新增统一 `AIService`、`BaseAIProvider`、DeepSeek Provider、统一响应 Schema、超时与有限重试策略。
+- 新增 `ai_request_logs` 与 revision `20260814_0009`，仅记录调用元数据和 Token 用量，不保存 Prompt、回复或密钥。
+- 新增 AI 状态、统计、固定连接测试 API 和 `/ai/settings` 内部配置验证页；未配置密钥时基础工作台仍可启动。
+- 新增 `AI_SETUP.md`，说明安全配置、验证流程、常见错误和未来 Provider 扩展方式。
+
 ## 2026-08-14 - Stage I 首页运营驾驶舱
 
 - 新增只读 `/api/v1/dashboard` 聚合 API 与 Router → Service → Repository 分层，不新增业务表或 AI 调用。

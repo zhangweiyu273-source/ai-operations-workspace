@@ -29,6 +29,13 @@
 - Dashboard 不新增业务表、不调用 AI。单次前端请求获得任务、内容、关键词、账号、知识、今日任务和复盘提醒，避免首页扇出请求多个业务 API。
 - “今日任务”以任务开始日期或截止日期为当天计算；待复盘为已完成且没有未删除复盘记录的任务；逾期排除已完成和已取消状态。列表展示最多 8 条今日任务和 5 条带问题摘要的近期复盘，限制首页负载。
 
+## 阶段 J：AI Provider 基础设施
+
+- 业务模块未来只能通过 `AIService` 使用模型：Business Module → `AIService` → `BaseAIProvider` → `DeepSeekProvider`。Router 和业务 Service 禁止直接调用厂商 HTTP/SDK。
+- `DeepSeekProvider` 统一处理认证、超时、有限退避重试、响应解析与安全错误转换；模型、超时和重试次数均由环境变量配置。
+- `ai_request_logs`（revision `20260814_0009`）仅记录 Provider、模型、功能标识、状态、Token、耗时和错误类型；不保存 Prompt、回复内容或 API Key。
+- `/api/v1/ai/status`、`/statistics`、`/test` 仅用于配置与连接验证。未配置密钥时 AI API 返回可诊断的安全错误，非 AI 模块不受影响。
+
 ## 1. 架构目标
 
 采用前后端分离的模块化单体。V1 优先保证数据一致性、低运维复杂度和清晰边界；未来可在不重写业务模型的前提下扩展多组织、权限、异步任务、对象存储与独立 AI 服务。

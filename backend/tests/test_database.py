@@ -22,7 +22,7 @@ def test_database_connection_and_migrated_schema() -> None:
             assert connection.execute(text("SELECT 1")).scalar_one() == 1
             assert (
                 connection.execute(text("SELECT version_num FROM alembic_version")).scalar_one()
-                == "20260814_0008"
+                == "20260814_0009"
             )
 
         table_names = set(inspect(engine).get_table_names())
@@ -36,6 +36,7 @@ def test_database_connection_and_migrated_schema() -> None:
             "knowledge_tags",
             "operation_tasks",
             "operation_reviews",
+            "ai_request_logs",
             "alembic_version",
             "organizations",
             "users",

@@ -1,1 +1,1 @@
-"""AI provider boundary. Provider implementations arrive in TASK-019."""
+"""Provider-agnostic AI infrastructure; business modules must use AIService."""
