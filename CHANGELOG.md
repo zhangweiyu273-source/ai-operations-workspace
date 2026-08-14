@@ -7,6 +7,12 @@
 - 增加 Topic 后端专项测试、前端交互测试及 PostgreSQL 联调回归。
 - 修复 TopicKeyword Migration 缺失 `updated_at` 字段的问题，新增 `20260814_0006`。
 
+## 2026-08-14 - Stage G 知识库
+
+- 新增组织级知识资产、标签关联与 `20260814_0007` Migration。
+- 提供知识 CRUD、数据库搜索、分类/标签/状态/优先级筛选、统计及软删除。
+- 新增知识库页面与前后端专项自动测试；不包含 AI、RAG 或向量检索能力。
+
 本项目遵循 Keep a Changelog 的结构，并使用语义化版本。
 
 ## [Unreleased]
