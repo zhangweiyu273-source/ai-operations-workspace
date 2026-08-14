@@ -180,3 +180,13 @@
 - 防止再次发生规则：新增模型必须在 PostgreSQL 迁移后执行真实写入验收，特别校验 Mixins 带来的全部列。
 - 对应测试：`scripts\test-backend.cmd` 的独立 PostgreSQL Migration；Docker 端到端 Topic-Keyword CRUD 联调。
 - 修复日期：2026-08-14
+
+### BUG-2026-015：PowerShell 批量 API 核验路径被错误插值
+
+- 问题表现：阶段 A-G 批量 API 核验显示多个 404，但服务、Migration 和健康检查均正常。
+- 根本原因：核验脚本在双引号字符串中写作 `$p?page_size=1`，没有使用 `${p}` 包裹变量，PowerShell 将其解析为错误的变量表达式，未形成实际模块路径。
+- 修复方式：改为 `".../${module}?page_size=1"` 并同时核验后端直连与 Next.js 同源代理。
+- 影响范围：仅验收诊断脚本输出；未影响 FastAPI Router、Docker 镜像、数据库或前端业务调用。
+- 防止再次发生规则：动态 URL 的 PowerShell 变量必须使用 `${variable}`；阶段验收必须以 OpenAPI 路由与真实 HTTP 响应交叉验证。
+- 对应回归测试：五个核心模块后端直连和 `/api/v1` 同源代理 GET 均返回 200。
+- 修复日期：2026-08-14
