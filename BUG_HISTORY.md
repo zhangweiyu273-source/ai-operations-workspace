@@ -190,3 +190,15 @@
 - 防止再次发生规则：动态 URL 的 PowerShell 变量必须使用 `${variable}`；阶段验收必须以 OpenAPI 路由与真实 HTTP 响应交叉验证。
 - 对应回归测试：五个核心模块后端直连和 `/api/v1` 同源代理 GET 均返回 200。
 - 修复日期：2026-08-14
+
+### BUG-2026-016：新增 Migration 后测试基线仍断言旧 revision
+
+- BUG编号：BUG-2026-016
+- 问题表现：数据库已正确升级到 `20260814_0008` 且任务、复盘表存在，但数据库测试仍断言 `20260814_0007`，导致回归测试错误失败。
+- 复现方式：执行包含阶段 H Migration 的后端测试，而 `test_database.py` 或 `test_migrations.py` 仍使用旧 revision。
+- 根本原因：新增 Alembic revision 时，Migration 状态与结构断言测试未同步维护。
+- 修复方式：将 Migration 基线统一更新为 `20260814_0008`，并断言 `operation_tasks`、`operation_reviews` 表存在。
+- 影响范围：仅测试验收可信度；开发数据库及已迁移数据未受影响。
+- 防止再次发生规则：每增加一个 Migration，必须在同一提交中同步更新 Migration head 断言、结构断言，并执行独立 PostgreSQL upgrade 验证。
+- 对应测试：`backend/tests/test_database.py`、`backend/tests/test_migrations.py` 与 `scripts/test-backend.cmd`。
+- 修复日期：2026-08-14

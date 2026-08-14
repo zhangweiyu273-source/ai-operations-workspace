@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-14 - Stage H 运营任务与复盘中心
+
+- 新增 `operation_tasks`、`operation_reviews` 及 Alembic revision `20260814_0008`，任务可真实关联 Account 与 Topic，复盘可真实关联 Task。
+- 新增版本化 Task / Review CRUD、分页、搜索、筛选与统计 API；任务支持完成时间和逾期状态计算。
+- 新增 `/tasks`、`/reviews` 工作台页面及其新增、编辑、删除、筛选、关联选择和状态修改交互。
+- 将任务、复盘业务严格分层为 Router → Service → Repository → Model / Database，并补充服务、仓储和前端专项回归测试。
+
 ## 2026-08-14 - Stage F 选题库验收完成
 
 - 新增 Topic 与 TopicKeyword 多对多数据模型、版本化 CRUD、筛选、分页、统计及软删除。

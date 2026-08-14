@@ -1,0 +1,12 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import TasksPage from "./page";
+
+const api = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() }));
+vi.mock("@/lib/api/client", () => ({ apiClient: api }));
+const task = { id: "t1", title: "制作视频", task_type: "内容创作", status: "待开始", priority: "中", related_topic_id: "p1", related_account_id: "a1", is_overdue: false, updated_at: "2026-08-14T00:00:00Z" };
+
+describe("TasksPage", () => {
+  beforeEach(() => { vi.clearAllMocks(); api.get.mockImplementation((path: string) => path.startsWith("/tasks") ? Promise.resolve({ items: [task] }) : path.startsWith("/topics") ? Promise.resolve({ items: [{ id: "p1", title: "数学选题" }] }) : Promise.resolve({ items: [{ id: "a1", account_name: "数学账号" }] })); api.post.mockResolvedValue(task); api.put.mockResolvedValue(task); api.delete.mockResolvedValue(undefined); vi.spyOn(window, "confirm").mockReturnValue(true); });
+  it("loads, filters, creates, edits, changes status and deletes", async () => { render(<TasksPage/>); await screen.findByText("制作视频"); fireEvent.change(screen.getByLabelText("搜索任务"), { target: { value: "视频" } }); fireEvent.change(screen.getByLabelText("任务状态筛选"), { target: { value: "进行中" } }); await waitFor(() => expect(api.get).toHaveBeenCalledWith(expect.stringContaining("status=%E8%BF%9B%E8%A1%8C%E4%B8%AD"))); fireEvent.click(screen.getByRole("button", { name: "新增任务" })); fireEvent.change(screen.getByLabelText("任务名称 *"), { target: { value: "新任务" } }); fireEvent.change(screen.getByLabelText("关联选题"), { target: { value: "p1" } }); fireEvent.change(screen.getByLabelText("关联账号"), { target: { value: "a1" } }); fireEvent.click(screen.getByRole("button", { name: "保存" })); await waitFor(() => expect(api.post).toHaveBeenCalledWith("/tasks", expect.objectContaining({ title: "新任务", related_topic_id: "p1", related_account_id: "a1" }))); fireEvent.click(screen.getByRole("button", { name: "编辑" })); fireEvent.click(screen.getByRole("button", { name: "保存" })); await waitFor(() => expect(api.put).toHaveBeenCalledWith("/tasks/t1", expect.any(Object))); fireEvent.change(screen.getByLabelText("修改 制作视频 状态"), { target: { value: "已完成" } }); await waitFor(() => expect(api.put).toHaveBeenCalledWith("/tasks/t1", expect.objectContaining({ status: "已完成" }))); fireEvent.click(screen.getByRole("button", { name: "删除" })); await waitFor(() => expect(api.delete).toHaveBeenCalledWith("/tasks/t1")); });
+});

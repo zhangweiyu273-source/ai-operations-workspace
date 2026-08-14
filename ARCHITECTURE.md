@@ -14,6 +14,14 @@
 - `/api/v1/knowledge` 提供 CRUD、分类、标签、统计、搜索、筛选与按更新时间排序。分类由后端配置端点提供，前端不维护独立分类常量。
 - 本阶段不包含任何 AI 调用、RAG、Embedding、向量数据库、文件解析或 AI 问答；未来 AI 能力仅通过稳定的 `knowledge_id` 引用知识资产。
 
+## 阶段 H：运营任务与复盘
+
+- `OperationTask` 是组织范围内的执行任务，复用公共 UUID、审计字段和软删除字段；`related_topic_id` 与 `related_account_id` 分别是真实外键，引用 `topics.id` 与 `accounts.id`，不保存名称副本。
+- `OperationReview` 通过非空 `task_id` 外键关联一个任务；一个任务可有多条复盘。任务和复盘的删除均为软删除，默认查询排除已删除记录。
+- API 层仅承担 HTTP 编排；`OperationTaskService` 与 `OperationReviewService` 负责关联校验、状态转换、完成时间、逾期判断和事务错误处理；Repository 负责 CRUD、分页、筛选和统计查询。
+- 任务被改为“已完成”时写入 `completed_at`；改为其他状态时清空该字段。截止时间早于当前 UTC 时间且状态不为“已完成/已取消”时，响应中的 `is_overdue` 为真。
+- `/api/v1/tasks` 和 `/api/v1/reviews` 提供 CRUD、分页、搜索、筛选和统计；前端 `/tasks` 与 `/reviews` 使用统一 API Client。该阶段不包含 AI、自动化工作流或首页改造。
+
 ## 1. 架构目标
 
 采用前后端分离的模块化单体。V1 优先保证数据一致性、低运维复杂度和清晰边界；未来可在不重写业务模型的前提下扩展多组织、权限、异步任务、对象存储与独立 AI 服务。
