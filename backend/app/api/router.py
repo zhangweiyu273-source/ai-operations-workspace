@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes.accounts import router as accounts_router
+from app.api.routes.dashboard import router as dashboard_router
 from app.api.routes.health import router as health_router
 from app.api.routes.keywords import router as keywords_router
 from app.api.routes.knowledge import router as knowledge_router
@@ -10,6 +11,7 @@ from app.api.routes.system import router as system_router
 from app.api.routes.topics import router as topics_router
 
 api_router = APIRouter()
+api_router.include_router(dashboard_router, prefix="/dashboard", tags=["dashboard"])
 api_router.include_router(accounts_router, prefix="/accounts", tags=["accounts"])
 api_router.include_router(
     operation_metrics_router, prefix="/operation-metrics", tags=["operation-metrics"]

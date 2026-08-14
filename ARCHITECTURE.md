@@ -23,6 +23,12 @@
 - `/api/v1/tasks` 和 `/api/v1/reviews` 提供 CRUD、分页、搜索、筛选和统计；前端 `/tasks` 与 `/reviews` 使用统一 API Client。该阶段不包含 AI、自动化工作流或首页改造。
 - Task 与 Review 列表响应统一包含 `items`、`total`、`page`、`page_size`、`total_pages`，前端每页读取 20 条并提供上一页/下一页导航，避免把固定 50 条误当作全量数据。Task 列表支持 `assignee` 精确筛选，以及 `deadline_from` / `deadline_to` 的截止时间范围筛选；日期范围由前端按本地日期边界转换为 UTC ISO 时间后传入 API。
 
+## 阶段 I：首页运营驾驶舱
+
+- `/api/v1/dashboard` 是只读聚合端点；Router 只负责 HTTP 编排，`DashboardService` 返回稳定响应契约，`DashboardRepository` 负责跨 Task、Topic、Keyword、Account、Knowledge、Review 的只读数据库聚合。
+- Dashboard 不新增业务表、不调用 AI。单次前端请求获得任务、内容、关键词、账号、知识、今日任务和复盘提醒，避免首页扇出请求多个业务 API。
+- “今日任务”以任务开始日期或截止日期为当天计算；待复盘为已完成且没有未删除复盘记录的任务；逾期排除已完成和已取消状态。列表展示最多 8 条今日任务和 5 条带问题摘要的近期复盘，限制首页负载。
+
 ## 1. 架构目标
 
 采用前后端分离的模块化单体。V1 优先保证数据一致性、低运维复杂度和清晰边界；未来可在不重写业务模型的前提下扩展多组织、权限、异步任务、对象存储与独立 AI 服务。
