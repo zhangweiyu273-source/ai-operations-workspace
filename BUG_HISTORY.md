@@ -263,3 +263,17 @@
 - 防止再次发生规则：HTTP header 的动态或常量值必须使用 ASCII/标准允许字符；中文提示仅放在响应体。
 - 对应测试：`frontend/src/proxy.test.ts`。
 - 修复日期：2026-08-20
+
+### BUG-2026-021：GitHub HTTPS push 重复失败
+
+- 首次出现时间：2026-08-20
+- 再次出现时间：2026-08-20
+- 问题表现：本地部署准备提交存在、`origin` 配置正确且 GitHub DNS 能解析，但 `git push` 无法建立 `github.com:443` HTTPS 连接。
+- 首次处理：检查 Git remote、DNS 与 Git HTTP 配置，并使用默认 HTTPS 与 HTTP/1.1 各尝试一次推送。
+- 为什么首次没有解决：问题不在仓库、提交、Git 安装或 remote 配置；首次尝试无法突破终端到 GitHub TCP 443 的网络限制。
+- 第二次确认根因：Codex/受限终端的网络路径可解析 `github.com`，但 TCP 443 连接失败；仍需由正常 Windows PowerShell 的 `Test-NetConnection github.com -Port 443` 结果确认是否为终端隔离或主机网络策略。
+- 本次处置：停止重复 `git push`，保留本地提交与工作区；不重建仓库、不删除 `.git`、不重新创建提交，也不修改业务代码或 Git 配置。
+- 长期优化措施：发布验收在推送前先执行 DNS、TCP 443、remote 与凭据四级连通性检查；仅在 TCP 443 成功后允许执行一次推送。
+- 防重复规则：GitHub push 失败时依序检查 `DNS → TCP 443 → Git remote → Git credential`；TCP 443 未通过时禁止重复推送或通过修改代码/Git 配置绕过。
+- 验收方法：在正常 Windows PowerShell 运行 `Test-NetConnection github.com -Port 443`。若 `TcpTestSucceeded=True`，执行一次 `git push -u origin master`；若该终端成功而 Codex 终端仍失败，则定性为 Codex/受限终端网络权限问题，并改用正常 PowerShell、GitHub Desktop 或调整终端/安全软件网络权限。
+- 状态：等待正常 Windows 终端的 443 测试结果。
