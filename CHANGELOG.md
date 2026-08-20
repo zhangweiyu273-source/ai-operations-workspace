@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Production deployment preparation
+
+- Added `render.yaml` for a Singapore-region Render deployment: public Next.js workbench, private FastAPI API service, and managed PostgreSQL.
+- Added production-only Basic Auth access protection with separate `admin` and read-only `viewer` roles.
+- Enforced the viewer role in the same-origin API proxy; write attempts now receive `403 READ_ONLY_ACCESS`.
+- Added managed PostgreSQL connection URL normalization for SQLAlchemy + psycopg.
+- Added deployment instructions in `docs/DEPLOY_RENDER.md`; no real secrets are committed.
+
+## 2026-08-15 - V1.0.0 Release Readiness
+
+- 冻结业务范围，完成 V1 部署、备份、启动与状态检查脚本。
+- 统一应用与前端版本为 `1.0.0`，增加 V1 验收记录与备份目录忽略规则。
+
 ## 2026-08-14 - Stage K AI运营分析中心 V1
 
 - 新增 `AIAnalysis` 持久化模型与 `20260814_0010` Alembic migration。

@@ -16,3 +16,7 @@ htmlcov/
 .vscode/
 storage/uploads/*
 !storage/uploads/.gitkeep
+backups/
+*.backup
+*.dump
+test_*.csv

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     app_name: str = "AI运营工作台"
-    app_version: str = "0.1.0"
+    app_version: str = "1.0.0"
     log_level: str = "INFO"
     database_url: str = "postgresql+psycopg://ai_ops@localhost:5432/ai_ops"
     cors_origins: str = "http://localhost:3000"
@@ -23,6 +23,16 @@ class Settings(BaseSettings):
     deepseek_model: str = "deepseek-chat"
     ai_timeout: float = Field(default=30, ge=1, le=120)
     ai_max_retries: int = Field(default=2, ge=0, le=5)
+
+    @field_validator("database_url")
+    @classmethod
+    def normalize_postgres_url(cls, value: str) -> str:
+        """Accept managed PostgreSQL URLs while consistently using psycopg."""
+        if value.startswith("postgres://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgres://")
+        if value.startswith("postgresql://"):
+            return "postgresql+psycopg://" + value.removeprefix("postgresql://")
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:

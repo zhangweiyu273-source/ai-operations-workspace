@@ -133,6 +133,14 @@ PostgreSQL 是事实来源。核心实体采用 UUID 主键、时区感知时间
 
 Compose 中 `migrate` 是一次性服务：等待 PostgreSQL healthy 后执行 `alembic upgrade head`；只有 migration 成功退出，backend 才启动。该顺序避免应用副本自行建表和并发迁移。
 
+### Render 线上部署
+
+生产环境采用根目录 `render.yaml`：公开的 Next.js Web Service 是唯一入口；FastAPI 使用 Render Private Service，仅能被前端经私网访问；PostgreSQL 使用 Render 托管数据库并以内部连接字符串注入后端。此结构保留当前 Dockerfile 与同源 `/api/v1` BFF 代理，不把数据库密码、DeepSeek Key 或后端公网地址打入前端 Bundle。
+
+Next.js 16 的 `src/proxy.ts` 只在 `ACCESS_PROTECTION_ENABLED=true` 时启用 HTTP Basic Auth：`admin` 使用 `ADMIN_ACCESS_PASSWORD` 获得管理权限，`viewer` 使用 `VIEWER_ACCESS_PASSWORD` 获得只读权限。Proxy 向内部 Route Handler 传递受控角色头；Route Handler 对 `viewer` 拒绝全部非 `GET`/`HEAD` 请求（`403 READ_ONLY_ACCESS`）。最终安全边界仍是私有 FastAPI 服务，外网不能绕过前端代理调用写 API。
+
+Render PostgreSQL 提供标准 `postgresql://` 连接字符串；`Settings.normalize_postgres_url` 在服务端统一转换为已安装 `psycopg` 驱动使用的 `postgresql+psycopg://`。生产 Migration 在私有 API 服务的 `preDeployCommand` 中执行；该能力要求使用支持 pre-deploy command 的付费服务计划。
+
 测试数据库使用 Compose `test` profile 中独立的 `test-db` 服务、`postgres_test_data` 卷和默认5433端口。`TEST_DATABASE_URL` 必须指向名称以 `_test` 结尾的数据库，禁止复用开发数据库。
 
 镜像内代码来自 build context，不挂载源码。任何代码变化后必须执行 `docker compose up -d --build --force-recreate`；单纯 restart 只重启旧镜像。运行版本通过 Migration head、健康检查和关键API联合确认。

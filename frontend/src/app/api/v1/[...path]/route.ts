@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const upstreamBase = process.env.BACKEND_INTERNAL_URL ?? "http://localhost:8000/api/v1";
+const upstreamBase =
+  process.env.BACKEND_INTERNAL_URL ??
+  (process.env.BACKEND_HOSTPORT ? `http://${process.env.BACKEND_HOSTPORT}/api/v1` : "http://localhost:8000/api/v1");
+
+function readOnlyResponse() {
+  return NextResponse.json(
+    { error: { code: "READ_ONLY_ACCESS", message: "当前为只读访问，不能修改运营数据或系统配置。" } },
+    { status: 403 },
+  );
+}
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
+  const isReadRequest = request.method === "GET" || request.method === "HEAD";
+  if (request.headers.get("x-ai-ops-role") === "viewer" && !isReadRequest) {
+    return readOnlyResponse();
+  }
+
   const { path } = await context.params;
   const target = new URL(`${upstreamBase}/${path.join("/")}`);
   target.search = request.nextUrl.search;

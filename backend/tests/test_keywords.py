@@ -153,6 +153,47 @@ def test_keyword_csv_import_preview_duplicates_and_export():
         )
 
 
+def test_keyword_csv_import_without_optional_status_uses_default():
+    client, _ = make_client()
+    with client:
+        cases = [
+            (
+                "keywords-without-status.csv",
+                "广州小升初缺列",
+                (
+                    "关键词,平台,城市,学段,年级,学科,搜索意图,商业意图\n"
+                    "广州小升初缺列,视频号/微信搜一搜,广州,小学升初中,六年级,全科,信息型,高\n"
+                ),
+            ),
+            (
+                "keywords-with-blank-status.csv",
+                "广州小升初空值",
+                (
+                    "关键词,平台,城市,学段,年级,学科,搜索意图,商业意图,状态\n"
+                    "广州小升初空值,视频号/微信搜一搜,广州,小学升初中,六年级,全科,信息型,高,\n"
+                ),
+            ),
+        ]
+        for filename, keyword, csv in cases:
+            content = csv.encode("utf-8-sig")
+            preview = client.post(
+                "/api/v1/keywords/import",
+                files={"file": (filename, content, "text/csv")},
+            ).json()
+            assert preview["can_import"] is True
+            assert preview["failed_count"] == 0
+            assert len(preview["preview"]) == 1
+
+            imported = client.post(
+                "/api/v1/keywords/import?confirm=true",
+                files={"file": (filename, content, "text/csv")},
+            ).json()
+            assert imported["success_count"] == 1
+            saved = client.get(f"/api/v1/keywords?search={keyword}").json()["items"]
+            assert len(saved) == 1
+            assert saved[0]["status"] == "启用"
+
+
 def test_keyword_excel_import_and_invalid_batch_is_atomic():
     client, _ = make_client()
     workbook = Workbook()

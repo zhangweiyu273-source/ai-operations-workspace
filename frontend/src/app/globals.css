@@ -41,6 +41,13 @@ button, input, textarea, select { font: inherit; }
 .topbar-user strong { font-size: 13px; }
 .topbar-user small { color: var(--muted); font-size: 11px; margin-top: 2px; }
 .workspace-content { width: min(1240px, 100%); margin: 0 auto; padding: 32px; }
+.read-only-notice { margin: 0 0 18px; padding: 10px 12px; border: 1px solid #e6c890; border-radius: 8px; background: #fffaf0; color: #765719; font-size: 13px; }
+.app-shell[data-read-only] .page-actions,
+.app-shell[data-read-only] .row-actions,
+.app-shell[data-read-only] .name-button,
+.app-shell[data-read-only] .filter-bar button,
+.app-shell[data-read-only] .button.primary,
+.app-shell[data-read-only] .danger-link { display: none; }
 
 .page-header { min-height: 72px; margin-bottom: 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
 .page-header h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; }

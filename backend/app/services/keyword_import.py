@@ -26,7 +26,7 @@ def parse_keyword_file(filename: str, content: bytes) -> tuple[list[str], list[d
 
 
 def normalize_keyword_row(row: dict[str, Any]) -> dict[str, Any]:
-    return {
+    normalized = {
         field: (
             str(row.get(header)).strip()
             if row.get(header) is not None and str(row.get(header)).strip()
@@ -34,3 +34,8 @@ def normalize_keyword_row(row: dict[str, Any]) -> dict[str, Any]:
         )
         for header, field in FIELD_MAP.items()
     }
+    # ``status`` has a Schema default (启用).  Do not override that default
+    # with None when an import file omits the optional 状态 column or leaves it blank.
+    if normalized["status"] is None:
+        normalized.pop("status")
+    return normalized

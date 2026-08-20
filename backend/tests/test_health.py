@@ -13,7 +13,7 @@ def test_liveness_returns_service_metadata() -> None:
     payload = response.json()
     assert payload["status"] == "ok"
     assert payload["service"] == "AI运营工作台"
-    assert payload["version"] == "0.1.0"
+    assert payload["version"] == "1.0.0"
 
 
 def test_readiness_checks_database(monkeypatch) -> None:  # type: ignore[no-untyped-def]
