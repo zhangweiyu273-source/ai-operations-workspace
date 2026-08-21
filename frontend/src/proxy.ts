@@ -1,24 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { getAccessProtectionConfig, getAccessProtectionDiagnostics, type AccessProtectionConfig } from "@/lib/access-protection";
+
 type AccessRole = "admin" | "viewer";
-
-type AccessProtectionConfig = {
-  enabled: boolean;
-  adminPassword?: string;
-  viewerPassword?: string;
-};
-
-function getAccessProtectionConfig(): AccessProtectionConfig {
-  // Computed access keeps these server-only values runtime-resolved in Docker hosts.
-  // Do not rename them with NEXT_PUBLIC_: credentials must never enter the browser bundle.
-  const environment = process.env;
-  return {
-    enabled: environment["ACCESS_PROTECTION_ENABLED"] === "true",
-    adminPassword: environment["ADMIN_ACCESS_PASSWORD"],
-    viewerPassword: environment["VIEWER_ACCESS_PASSWORD"],
-  };
-}
 
 function unauthorized() {
   return new NextResponse("需要有效的访问账号与密码。", {
@@ -29,8 +14,8 @@ function unauthorized() {
 
 function unavailable(config: AccessProtectionConfig) {
   console.error("Access protection server configuration is incomplete", {
-    adminPasswordConfigured: Boolean(config.adminPassword),
-    viewerPasswordConfigured: Boolean(config.viewerPassword),
+    ...getAccessProtectionDiagnostics(config),
+    execution: "src/proxy.ts:unavailable",
   });
   return new NextResponse("访问保护尚未完成服务器配置。", { status: 503 });
 }
@@ -74,5 +59,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/access-status).*)"],
 };

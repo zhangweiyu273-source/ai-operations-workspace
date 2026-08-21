@@ -287,3 +287,14 @@
 - 防止再次发生规则：上线前在“构建时无密码、运行时有密码”的 standalone 产物中验证 401；若生产返回 503，只检查对应服务运行日志中的配置布尔值，不要求用户在聊天中披露密码。
 - 对应测试：`frontend/src/proxy.test.ts` 覆盖缺失密码、管理员认证与 viewer 认证；生产 standalone 运行期注入测试。
 - 修复日期：2026-08-21
+- 再次出现时间：2026-08-21
+- 是否属于重复问题：是，`RECURRING ISSUE`。
+- 首次修复 Commit：`ea5bbb5`。
+- 首次修复方案：通过动态 `process.env["..."]` 读取密码，并对缺失配置记录安全的布尔日志。
+- 为什么首次没有真正解决：首次依据本地 standalone 运行期注入验证推断 Railway 容器缺少变量，却没有在 Railway 的 Next Proxy 与 Node Route Handler 两个真实执行边界分别读取运行时状态，因此不能区分 Proxy 运行边界与服务进程环境注入差异。
+- 第二次确认根因：错误文本全项目仅由 `src/proxy.ts` 的 `unavailable()` 返回；Proxy 在路由、layout 与页面之前终止请求。Railway 的最终变量可见性尚需在线运行证据确认。
+- 第二次修复方案：新增强制 Node runtime 的 `/api/access-status`，并从 Proxy matcher 排除；该端点只返回启用状态、两项 Secret 是否存在、runtime 与 NODE_ENV。503 日志增加同样的安全诊断字段。
+- 长期优化措施：生产访问保护验收同时核验 Proxy 503/401 与 `/api/access-status` 的 Node runtime 布尔输出；两者不一致时按运行边界问题处理，不再猜测变量名或暴露 Secret。
+- 新增回归测试：`access-protection.test.ts`、`access-status/route.test.ts` 与 `proxy.test.ts` 覆盖完整配置、分别缺少 admin/viewer、无 Secret 响应和 Proxy 排除规则。
+- 验收方法：生产构建后，缺密钥实例的根路径为 503、`/api/access-status` 可返回安全布尔；完整密钥实例根路径为 401、端点返回两个 `Configured=true`。
+- 状态：已实现，待 Railway 真实验证。

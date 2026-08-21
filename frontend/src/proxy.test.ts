@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { proxy } from "./proxy";
+import { config } from "./proxy";
 
 const previous = {
   enabled: process.env.ACCESS_PROTECTION_ENABLED,
@@ -72,5 +73,9 @@ describe("production access protection", () => {
     vi.stubEnv("VIEWER_ACCESS_PASSWORD", "viewer-secret");
 
     expect(proxy(new NextRequest("https://workbench.example.com/data")).status).toBe(503);
+  });
+
+  it("excludes the safe Node runtime diagnostic endpoint from Proxy", () => {
+    expect(config.matcher).toContain("/((?!_next/static|_next/image|favicon.ico|api/access-status).*)");
   });
 });
