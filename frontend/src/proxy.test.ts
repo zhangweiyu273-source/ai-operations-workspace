@@ -34,10 +34,42 @@ describe("production access protection", () => {
     expect(response.headers.get("WWW-Authenticate")).toContain("Basic");
   });
 
+  it("sets the administrator role after valid administrator authentication", () => {
+    vi.stubEnv("ACCESS_PROTECTION_ENABLED", "true");
+    vi.stubEnv("ADMIN_ACCESS_PASSWORD", "admin-secret");
+    vi.stubEnv("VIEWER_ACCESS_PASSWORD", "viewer-secret");
+
+    const credentials = Buffer.from("admin:admin-secret").toString("base64");
+    const response = proxy(
+      new NextRequest("https://workbench.example.com/data", {
+        headers: { authorization: `Basic ${credentials}` },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-request-x-ai-ops-role")).toBe("admin");
+  });
+
+  it("sets the viewer role after valid viewer authentication", () => {
+    vi.stubEnv("ACCESS_PROTECTION_ENABLED", "true");
+    vi.stubEnv("ADMIN_ACCESS_PASSWORD", "admin-secret");
+    vi.stubEnv("VIEWER_ACCESS_PASSWORD", "viewer-secret");
+
+    const credentials = Buffer.from("viewer:viewer-secret").toString("base64");
+    const response = proxy(
+      new NextRequest("https://workbench.example.com/data", {
+        headers: { authorization: `Basic ${credentials}` },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-middleware-request-x-ai-ops-role")).toBe("viewer");
+  });
+
   it("rejects production access when required passwords are missing", () => {
     vi.stubEnv("ACCESS_PROTECTION_ENABLED", "true");
     vi.stubEnv("ADMIN_ACCESS_PASSWORD", "");
-    vi.stubEnv("VIEWER_ACCESS_PASSWORD", "");
+    vi.stubEnv("VIEWER_ACCESS_PASSWORD", "viewer-secret");
 
     expect(proxy(new NextRequest("https://workbench.example.com/data")).status).toBe(503);
   });

@@ -277,3 +277,13 @@
 - 防重复规则：GitHub push 失败时依序检查 `DNS → TCP 443 → Git remote → Git credential`；TCP 443 未通过时禁止重复推送或通过修改代码/Git 配置绕过。
 - 验收方法：在正常 Windows PowerShell 运行 `Test-NetConnection github.com -Port 443`。若 `TcpTestSucceeded=True`，执行一次 `git push -u origin master`；若该终端成功而 Codex 终端仍失败，则定性为 Codex/受限终端网络权限问题，并改用正常 PowerShell、GitHub Desktop 或调整终端/安全软件网络权限。
 - 状态：等待正常 Windows 终端的 443 测试结果。
+
+### BUG-2026-022：Railway 前端访问保护变量已配置但运行时显示未完成
+
+- 问题表现：`ai-ops-workbench` 在 Railway 中设置了 `ACCESS_PROTECTION_ENABLED=true`、`ADMIN_ACCESS_PASSWORD` 和 `VIEWER_ACCESS_PASSWORD`，公网访问仍返回“访问保护尚未完成服务器配置。”（503）。
+- 根本原因：该 503 仅在 Proxy 进程读取到任一密码为空时触发。受控生产验证证明 Next.js standalone 可在运行期读取变量，因此实际 Railway 容器没有获得至少一个密码变量；不是变量名、布尔字符串解析、客户端环境变量或密码泄露问题。
+- 修复方式：访问保护改为通过 `process.env["..."]` 动态读取服务器变量，避免部署构建器对直接成员访问进行静态优化；缺失时只记录两个“是否已配置”布尔值，绝不记录密码内容。
+- 影响范围：仅 `ai-ops-workbench` 的 HTTP Basic Auth 入口；数据库、AI、业务 API 和前端公开变量不变。
+- 防止再次发生规则：上线前在“构建时无密码、运行时有密码”的 standalone 产物中验证 401；若生产返回 503，只检查对应服务运行日志中的配置布尔值，不要求用户在聊天中披露密码。
+- 对应测试：`frontend/src/proxy.test.ts` 覆盖缺失密码、管理员认证与 viewer 认证；生产 standalone 运行期注入测试。
+- 修复日期：2026-08-21

@@ -3,6 +3,23 @@ import type { NextRequest } from "next/server";
 
 type AccessRole = "admin" | "viewer";
 
+type AccessProtectionConfig = {
+  enabled: boolean;
+  adminPassword?: string;
+  viewerPassword?: string;
+};
+
+function getAccessProtectionConfig(): AccessProtectionConfig {
+  // Computed access keeps these server-only values runtime-resolved in Docker hosts.
+  // Do not rename them with NEXT_PUBLIC_: credentials must never enter the browser bundle.
+  const environment = process.env;
+  return {
+    enabled: environment["ACCESS_PROTECTION_ENABLED"] === "true",
+    adminPassword: environment["ADMIN_ACCESS_PASSWORD"],
+    viewerPassword: environment["VIEWER_ACCESS_PASSWORD"],
+  };
+}
+
 function unauthorized() {
   return new NextResponse("需要有效的访问账号与密码。", {
     status: 401,
@@ -10,18 +27,22 @@ function unauthorized() {
   });
 }
 
-function unavailable() {
+function unavailable(config: AccessProtectionConfig) {
+  console.error("Access protection server configuration is incomplete", {
+    adminPasswordConfigured: Boolean(config.adminPassword),
+    viewerPasswordConfigured: Boolean(config.viewerPassword),
+  });
   return new NextResponse("访问保护尚未完成服务器配置。", { status: 503 });
 }
 
-function resolveRole(request: NextRequest): AccessRole | null {
+function resolveRole(request: NextRequest, config: AccessProtectionConfig): AccessRole | null {
   const authorization = request.headers.get("authorization");
   if (!authorization?.startsWith("Basic ")) return null;
 
   try {
     const [username, password] = atob(authorization.slice(6)).split(":", 2);
-    if (username === "admin" && password === process.env.ADMIN_ACCESS_PASSWORD) return "admin";
-    if (username === "viewer" && password === process.env.VIEWER_ACCESS_PASSWORD) return "viewer";
+    if (username === "admin" && password === config.adminPassword) return "admin";
+    if (username === "viewer" && password === config.viewerPassword) return "viewer";
   } catch {
     return null;
   }
@@ -29,19 +50,19 @@ function resolveRole(request: NextRequest): AccessRole | null {
 }
 
 export function proxy(request: NextRequest) {
-  const protectionEnabled = process.env.ACCESS_PROTECTION_ENABLED === "true";
+  const config = getAccessProtectionConfig();
   const requestHeaders = new Headers(request.headers);
 
-  if (!protectionEnabled) {
+  if (!config.enabled) {
     requestHeaders.set("x-ai-ops-role", "admin");
     return NextResponse.next({ request: { headers: requestHeaders } });
   }
 
-  if (!process.env.ADMIN_ACCESS_PASSWORD || !process.env.VIEWER_ACCESS_PASSWORD) {
-    return unavailable();
+  if (!config.adminPassword || !config.viewerPassword) {
+    return unavailable(config);
   }
 
-  const role = resolveRole(request);
+  const role = resolveRole(request, config);
   if (!role) return unauthorized();
 
   requestHeaders.set("x-ai-ops-role", role);
