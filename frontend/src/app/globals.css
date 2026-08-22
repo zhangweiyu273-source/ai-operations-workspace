@@ -87,8 +87,22 @@ button, input, textarea, select { font: inherit; }
 .data-table th { color: var(--muted); background: #f8fafb; font-weight: 600; white-space: nowrap; }
 .data-table tbody tr:last-child td { border-bottom: 0; }
 .name-button, .row-actions button { border: 0; padding: 0; background: none; color: var(--accent); cursor: pointer; font-weight: 600; }
+.knowledge-title-link { color: var(--accent); font-weight: 600; text-decoration: none; }
+.knowledge-title-link:hover { text-decoration: underline; }
 .row-actions { display: flex; gap: 10px; white-space: nowrap; }
 .row-actions .danger-link { color: #b04444; }
+.knowledge-table { min-width: 1160px; }
+.knowledge-match { margin-top: 8px; padding: 9px 10px; border-left: 3px solid #4e9d8c; border-radius: 0 7px 7px 0; background: #f4faf8; color: #31434a; line-height: 1.55; }
+.knowledge-match strong { color: var(--accent); font-size: 12px; }
+.knowledge-match p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.knowledge-detail-card { padding: 22px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.knowledge-detail-card h2 { margin: 28px 0 12px; font-size: 17px; }
+.knowledge-summary p { margin: 0; color: var(--muted); line-height: 1.7; }
+.knowledge-entry-list { display: grid; gap: 10px; }
+.knowledge-entry { padding: 14px; border: 1px solid #dce9e5; border-radius: 9px; background: #fbfdfc; }
+.knowledge-entry h3 { margin: 0; color: var(--accent); font-size: 15px; }
+.knowledge-entry p { margin: 8px 0 0; line-height: 1.65; }
+.knowledge-source pre { margin: 0; padding: 16px; overflow: auto; border-radius: 9px; background: #f7f9fa; color: #31434a; font: 13px/1.7 Arial, "Microsoft YaHei", sans-serif; white-space: pre-wrap; }
 .status-pill { display: inline-flex; padding: 4px 8px; border-radius: 999px; background: #eef2f3; color: #53616a; font-size: 12px; white-space: nowrap; }
 .status-启用 { background: #e8f4ef; color: #28745e; }
 .status-停用 { background: #f1f2f3; color: #65717a; }

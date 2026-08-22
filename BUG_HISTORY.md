@@ -298,3 +298,50 @@
 - 新增回归测试：`access-protection.test.ts`、`access-status/route.test.ts` 与 `proxy.test.ts` 覆盖完整配置、分别缺少 admin/viewer、无 Secret 响应和 Proxy 排除规则。
 - 验收方法：生产构建后，缺密钥实例的根路径为 503、`/api/access-status` 可返回安全布尔；完整密钥实例根路径为 401、端点返回两个 `Configured=true`。
 - 状态：已实现，待 Railway 真实验证。
+
+#### 持续性故障升级（2026-08-21）
+
+- 状态：`PERSISTENT ISSUE / 未关闭`。
+- 第三次运行证据：Railway 最新 `ai-ops-workbench` 部署的 `/api/access-status` 返回 `enabled=true`、`adminConfigured=false`、`viewerConfigured=false`、`runtime=nodejs`、`nodeEnv=production`。
+- 第一次方案为何失败：仅以本地 standalone 的运行期注入结果推断线上变量可见性，未验证 Railway 实际运行进程。
+- 第二次方案为何失败：安全诊断端点只补充了可见性证据，并未修复 Railway 服务变量的实际值、作用域或引用；线上部署变量仍向 Node 进程注入两个空/缺失密码。
+- 当前确认根因：项目没有 `railway.toml`/`railway.json`、Dockerfile `ENV`/`ARG` 白名单或自定义环境变量映射；三个变量由同一 `process.env["..."]` 运行期读取。开关可读而两个密码均不可读，证明故障位于 Railway 的 `ai-ops-workbench` Production 服务变量数据/作用域（空值、错误服务/环境或解析为空的引用），不是 Next.js 构建、Proxy、Docker 镜像或变量名问题。
+- 最终方案：仅在 Railway Production → `ai-ops-workbench` 服务中，以直接服务变量重建 `ADMIN_ACCESS_PASSWORD` 和 `VIEWER_ACCESS_PASSWORD` 的真实非空值，保留 `ACCESS_PROTECTION_ENABLED=true`；保存并部署变量变更后，以安全布尔端点验收。
+- 方案 A：直接服务变量（推荐，单服务密码无引用链）。方案 B：项目共享变量加明确 `${{ shared.KEY }}` 引用（仅在多个服务确实需要同一密码时使用）。
+- 防重复规则：发布验收必须在真实部署上同时检查 `/api/access-status` 的三个布尔字段和根路径的 401；仅“变量列表显示键名”不得视为 Secret 已注入。变量改动必须产生并部署 staged change。
+- 新增/保留回归测试：`access-protection.test.ts`、`access-status/route.test.ts`、`proxy.test.ts`；平台层验收由上述线上端点完成，端点不得输出 Secret 值或长度。
+
+### BUG-2026-023：本机无法连接 Railway PostgreSQL Public TCP Proxy
+
+- 问题表现：`ai-ops-db` 显示 Online 且 Public Networking/TCP Proxy 显示 Active，但 Windows 本机对代理端口连续测试为 `PingSucceeded=True`、`TcpTestSucceeded=False`；使用 `psql` 的只读连接在认证前被拒绝。
+- 根本原因：尚未确认。证据仅能确认本机到 Railway PostgreSQL 公网 TCP 端口不可达；这不是项目数据库 Schema、Migration、密码校验或业务代码问题。
+- 当前处置：停止重复公网 URL 连接；优先验证 Railway CLI `railway connect ai-ops-db --environment production --ssh --tunnel-only` 的 SSH Tunnel。Tunnel 失败后才评估临时内部迁移 Job。
+- 影响范围：阻塞本地真实业务数据向 Railway PostgreSQL 的只读核验与迁移；不影响本地 Docker 数据库的既有数据。
+- 防止再次发生规则：数据库公网端口失败时先以 Windows 原生 `Test-NetConnection` 记录 DNS/Ping/TCP 结果；TCP 不通时禁止反复更换 URL、密码、Migration 或业务代码，改用官方 Tunnel。
+- 验收方法：Tunnel 建立后只读读取 `alembic_version`、业务表与记录数；通过后再进行备份、dry-run、用户授权迁移。
+- 状态：未关闭，等待 Railway CLI SSH Tunnel 验证。
+
+### BUG-2026-024：本地前端容器继续提供旧版知识库页面
+
+- 问题表现：知识库搜索按钮与 Enter 搜索代码已修改且 Vitest 通过，但 `http://localhost:3000/knowledge` 仍展示旧版页面，只有输入框而没有搜索按钮。
+- 是否属于重复问题：是，属于“代码修改未进入运行容器”的历史 Docker 运行版本不一致问题。
+- 首次处理方式：修改前端源码并运行本地 Vitest/lint。
+- 为什么首次没有解决：首次只验证了源码与前端测试，没有在修改后重建实际监听 `3000` 端口的 Docker frontend 镜像。
+- 本次确认根因：`localhost:3000` 由 `ai-frontend-1` 的 Docker 端口映射提供；该容器创建于代码修改前，返回 HTML 中缺少新搜索按钮。
+- 本次修复：使用 Docker CLI 的明确路径仅执行 `compose up -d --build --force-recreate --no-deps frontend`，未重建 backend/db，未删除 Volume。
+- 与第一次方案差异：增加“运行中页面 HTML 含新控件”的容器级验证，而非仅检查源码和单元测试。
+- 防重复优化：凡修改 Docker 构建型前端后，验收顺序固定为“源码 → Vitest/lint → frontend rebuild/recreate → localhost HTML/交互核验”；Docker CLI 未在 PATH 时必须定位其实际路径，不得误判为本地页面已更新。
+- 新增测试：`frontend/src/features/knowledge/knowledge-page.test.tsx` 覆盖按钮与 Enter 触发同一搜索方法。
+- 真实验证：新 frontend 容器 healthy；本地页面 HTML 含“搜索”按钮；本地 `/api/v1/knowledge?search=MK` 返回 HTTP 200。
+- 状态：已关闭。注意：本地知识库当前为 0 条，因此 `MK` 返回 0 条是数据状态，不是搜索故障；该词典记录已写入 Railway 数据库。
+
+### BUG-2026-025：知识库全文搜索未覆盖分类与标签
+
+- 问题表现：知识库 `search` 仅匹配标题、正文和摘要；输入仅存在于标签的 `XSC` 或仅存在于分类的“行业资料”时无法命中。
+- 根本原因：`KnowledgeRepository.filters()` 的全文 `OR` 条件遗漏 `Knowledge.category` 与 `KnowledgeTag.tag_name`。
+- 修复方式：在既有 `search` 条件中加入分类包含匹配，以及标签名包含匹配的 `knowledge_id` 子查询；独立 `tag`、`category` 筛选逻辑保持不变。
+- 影响范围：仅知识库列表的统一搜索范围；不涉及数据库结构、Migration、知识数据或 API 路径。
+- 防止再次发生规则：全文搜索范围变更必须为每个声明支持的字段提供“仅该字段命中”的 API 测试，避免因标题或正文同时含词而产生假阳性。
+- 对应测试：`test_unified_knowledge_search_covers_tags_category_and_content`，覆盖 `XSC` 标签、`行业资料` 分类和 `HD` 正文。
+- 修复日期：2026-08-22
+- 状态：本地 API 与前端验收通过；等待 Railway V1.1 发布验证。

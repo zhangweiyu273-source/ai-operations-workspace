@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Knowledge search V1.1
+
+- Extended unified knowledge search to include title, summary, content, tags and category.
+- Added entry-level match snippets and a read-only knowledge document detail page with term explanations.
+
+### Documentation
+
+- Added `PROJECT_HANDOFF.md` with verified repository, deployment, local-data and Railway migration handoff status.
+- Documented that Railway data migration remains pending and must use a verified SSH Tunnel or an explicitly approved fallback before any production write.
+
 ### Production deployment preparation
 
 - Added `render.yaml` for a Singapore-region Render deployment: public Next.js workbench, private FastAPI API service, and managed PostgreSQL.

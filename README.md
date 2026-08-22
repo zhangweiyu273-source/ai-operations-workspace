@@ -138,4 +138,8 @@ wsl --install --no-distribution
 
 ## 当前能力与边界
 
-当前已提供 Organization/User 公共模型、账号矩阵和运营数据中心。数据中心的标准导入列、重复策略和统计公式见 `METRICS.md` 与 `ARCHITECTURE.md`。其他业务页仍为空状态，不接入平台自动抓取、复杂权限、AI 调用或 RAG。
+当前已提供账号矩阵、运营数据中心、关键词库、选题库、知识库、任务与复盘、首页驾驶舱、AI Provider 基础设施和只读 AI 分析。数据中心的标准导入列、重复策略和统计公式见 `METRICS.md` 与 `ARCHITECTURE.md`。
+
+线上 Railway 部署包含 `ai-ops-workbench`、`ai-ops-api` 与 `ai-ops-db` 三个服务；本地真实业务数据尚未迁移到 Railway。迁移前必须完成 SSH Tunnel 或其他受控内部网络连接、目标库只读核验、Railway 备份、dry-run 和用户明确授权。详细接手状态见 `PROJECT_HANDOFF.md`。
+
+当前不包含平台自动抓取、自动发布、复杂 RBAC、私域运营中心、用户洞察中心、RAG 或向量数据库。
