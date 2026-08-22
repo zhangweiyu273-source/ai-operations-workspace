@@ -20,3 +20,8 @@ backups/
 *.backup
 *.dump
 test_*.csv
+# Local tools
+railway.exe
+
+# Migration runtime logs
+migration_logs/

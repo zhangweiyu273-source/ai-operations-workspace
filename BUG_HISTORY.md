@@ -278,6 +278,15 @@
 - 验收方法：在正常 Windows PowerShell 运行 `Test-NetConnection github.com -Port 443`。若 `TcpTestSucceeded=True`，执行一次 `git push -u origin master`；若该终端成功而 Codex 终端仍失败，则定性为 Codex/受限终端网络权限问题，并改用正常 PowerShell、GitHub Desktop 或调整终端/安全软件网络权限。
 - 状态：等待正常 Windows 终端的 443 测试结果。
 
+#### 持续性故障升级（2026-08-22）
+
+- 状态：`PERSISTENT ISSUE / 未关闭`。
+- 本次表现：创建 `v1.1.0-knowledge-search` 本地 tag 与发布说明后，首次 `git push origin master` 报 `Recv failure: Connection was reset`；后续只读检查显示 `Test-NetConnection github.com -Port 443` 的 `TcpTestSucceeded=False`，且 `git ls-remote` 无法连接。
+- 前两次方案及失败原因：此前只要 Windows TCP 443 暂时恢复，单次推送可以成功；但该方案无法稳定改善 Codex 终端到 GitHub 的网络路径，因此不具备长期可靠性。
+- 当前确认根因：终端到 `github.com:443` 的网络连接间歇性被重置或阻断；DNS 与本地 Git 仓库、remote、提交和 tag 均正常。该故障属于环境网络，不是代码或 Git 配置问题。
+- 推荐方案：等待正常 Windows PowerShell 的 TCP 443 检查通过后，由用户在该终端或 GitHub Desktop 执行一次推送；在此之前禁止重试、重建仓库、删除 `.git`、重新提交或修改业务代码。
+- 验收方法：先执行 `Test-NetConnection github.com -Port 443`；仅当 `TcpTestSucceeded=True` 时执行一次 `git push origin master` 与 `git push origin v1.1.0-knowledge-search`，再以 `git ls-remote --tags origin refs/tags/v1.1.0-knowledge-search` 确认 tag 已上游可见。
+
 ### BUG-2026-022：Railway 前端访问保护变量已配置但运行时显示未完成
 
 - 问题表现：`ai-ops-workbench` 在 Railway 中设置了 `ACCESS_PROTECTION_ENABLED=true`、`ADMIN_ACCESS_PASSWORD` 和 `VIEWER_ACCESS_PASSWORD`，公网访问仍返回“访问保护尚未完成服务器配置。”（503）。
